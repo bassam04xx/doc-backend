@@ -26,7 +26,11 @@ SECRET_KEY = 'django-insecure-odo6$n!p(4=g#6&6p^owktr3n3*q*16nnc4z88v3i%^u*3oab&
 DEBUG = True
 
 ALLOWED_HOSTS = []
-AUTH_USER_MODEL = 'user_app.User'
+AUTH_USER_MODEL = 'user.User'
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8000',  # Replace with the actual domain of your app
+    'chrome-extension://eipdnjedkpcnlmmdfdkgfpljanehloah',  # Add the specific extension origin if needed
+]
 
 
 
@@ -39,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'user',
 ]
 
 MIDDLEWARE = [

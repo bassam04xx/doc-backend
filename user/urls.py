@@ -1,6 +1,6 @@
 from django.urls import path
-from . import soap_views
+from .views import django_soap_app
 
 urlpatterns = [
-    path('soap/', soap_views.UserService.as_view(), name='soap_service'),
+    path('soap/', django_soap_app),
 ]

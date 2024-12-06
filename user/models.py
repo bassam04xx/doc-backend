@@ -10,4 +10,4 @@ class User(AbstractUser):
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='employee')
 
     def __str__(self):
-        return self.username
+        return f"{self.username} ({self.role})"

@@ -1,37 +1,51 @@
-from django.http import HttpResponse
-from soaplib.core.service import SoapService
-from soaplib.core.model import SoapObject
-from soaplib.core import Application
-from django.shortcuts import render
-from .models import User
+from spyne import Application, rpc, ServiceBase, Unicode, Fault, ComplexModel
+from spyne.protocol.soap import Soap11
+from spyne.server.django import DjangoApplication
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth import authenticate
+from django.db import IntegrityError
 
-# Define User data structure for SOAP
-class UserData(SoapObject):
-    def __init__(self, username=None, email=None, role=None):
-        self.username = username
-        self.email = email
-        self.role = role
+User = get_user_model()
 
-# Create a SOAP Service
-class UserService(SoapService):
+class UserData(ComplexModel):
+    username = Unicode
+    email = Unicode
+    role = Unicode
 
-    @soapdoc('register')
-    def register_user(self, username, email, password, role):
-        """Handles user registration through SOAP"""
+class UserService(ServiceBase):
+
+    @rpc(Unicode, Unicode, Unicode, Unicode, _returns=Unicode)
+    def register_user(ctx, username, email, password, role):
         try:
-            user = User.objects.create_user(username=username, email=email, password=password, role=role)
-            return UserData(username=user.username, email=user.email, role=user.role)
+            if role not in dict(User.ROLE_CHOICES):
+                raise ValueError(f"Invalid role. Valid roles: {', '.join(dict(User.ROLE_CHOICES))}")
+            user = User.objects.create(
+                username=username,
+                email=email,
+                password=make_password(password),
+                role=role,
+            )
+            user.save()
+            return f"User {username} registered successfully with role {role}!"
+        except IntegrityError:
+            return "Error: Username or email already exists."
         except Exception as e:
             return f"Error: {str(e)}"
 
-    @soapdoc('login')
-    def login_user(self, username, password):
-        """Handles user login through SOAP"""
-        try:
-            user = User.objects.get(username=username)
-            if user.check_password(password):
-                return UserData(username=user.username, email=user.email, role=user.role)
-            else:
-                return "Invalid credentials"
-        except User.DoesNotExist:
-            return "User not found"
+    @rpc(Unicode, Unicode, _returns=UserData)
+    def login_user(ctx, username, password):
+        user = authenticate(username=username, password=password)
+        if user:
+            return UserData(username=user.username, email=user.email, role=user.role)
+        raise Fault(faultcode="Client", faultstring="Invalid credentials")
+
+# SOAP Application
+soap_app = Application(
+    [UserService],
+    tns="myproject.user",
+    in_protocol=Soap11(validator="lxml"),
+    out_protocol=Soap11(),
+)
+django_soap_app = csrf_exempt(DjangoApplication(soap_app))
