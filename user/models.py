@@ -7,7 +7,9 @@ class User(AbstractUser):
         ('manager', 'Manager'),
         ('employee', 'Employee'),
     ]
+    
+    # Ensure role is required and defaults to 'employee'
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='employee')
 
     def __str__(self):
-        return f"{self.username} ({self.role})"
+        return self.username

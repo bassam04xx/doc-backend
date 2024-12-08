@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+</head>
+<body>
+    <h1>Register</h1>
+    <form id="registerForm" onsubmit="event.preventDefault(); registerUser();">
+        <label for="username">Username:</label><br>
+        <input type="text" id="username" name="username" required><br><br>
+
+        <label for="email">Email:</label><br>
+        <input type="email" id="email" name="email" required><br><br>
+
+        <label for="password">Password:</label><br>
+        <input type="password" id="password" name="password" required><br><br>
+
+        <label for="role">Role:</label><br>
+        <select id="role" name="role" required>
+            <option value="employee">Employee</option>
+            <option value="manager">Manager</option>
+        </select><br><br>
+
+        <button type="submit">Register</button>
+    </form>
+
+    <p id="message"></p>
+
+    <script>
+        async function registerUser() {
+            // Get the form data
+            const formData = new FormData(document.getElementById('registerForm'));
+
+            // Construct the SOAP payload
+            const payload = `
+                <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:usr="project.user">
+                    <soapenv:Header/>
+                    <soapenv:Body>
+                        <usr:register_user>
+                            <usr:username>${formData.get('username')}</usr:username>
+                            <usr:email>${formData.get('email')}</usr:email>
+                            <usr:password>${formData.get('password')}</usr:password>
+                            <usr:role>${formData.get('role')}</usr:role>
+                        </usr:register_user>
+                    </soapenv:Body>
+                </soapenv:Envelope>
+            `;
+
+            // Send the SOAP request
+            try {
+                const response = await fetch('/user/soap/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/xml' },
+                    body: payload,
+                });
+
+                // Check for a successful response
+                if (response.ok) {
+                    document.getElementById('message').textContent = "Registration successful!";
+                } else {
+                    const errorText = await response.text();
+                    document.getElementById('message').textContent = `Error: ${errorText}`;
+                }
+            } catch (error) {
+                document.getElementById('message').textContent = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
