@@ -6,9 +6,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate
+from .complexTypes import User as ComplexUser
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
+
+from django.core.exceptions import ObjectDoesNotExist
 
 User = get_user_model()
 
@@ -83,6 +86,16 @@ class UserData(ComplexModel):
 
 
 class UserService(ServiceBase):
+    @rpc(ComplexUser, _returns=Unicode)
+    def register_user(self, user: ComplexUser):
+        try:
+            if user.role not in dict(User.ROLE_CHOICES):
+                raise ValueError(f"Invalid role. Valid roles: {', '.join(dict(User.ROLE_CHOICES))}")
+            usr = User.objects.create(
+                username= user.username,
+                email=user.email,
+                password=make_password(user.password),
+                role=user.role,
 
 
     @rpc(Unicode, Unicode, Unicode, Unicode, _returns=Unicode)
@@ -106,6 +119,8 @@ class UserService(ServiceBase):
                 password=password,
                 role=role,  # Use the role provided in the request
             )
+            usr.save()
+            return f"User {usr.username} registered successfully with role {user.role}!"
             return f"User {username} registered successfully with role {role}!"
         except IntegrityError:
             raise Fault(faultcode="Client", faultstring="Username or email already exists.")
@@ -138,6 +153,8 @@ class UserService(ServiceBase):
         except Exception as e:
             raise Fault(faultcode="Server", faultstring="An unexpected error occurred.")
 
+    @rpc(Unicode, Unicode, _returns=ComplexUser)
+    def login_user(self, username, password):
     @rpc(Unicode, Unicode, _returns=UserData)
     def login_user(ctx, username, password):
         """
@@ -145,6 +162,7 @@ class UserService(ServiceBase):
         """
         user = authenticate(username=username, password=password)
         if user:
+            return ComplexUser(username=user.username, email=user.email, role=user.role)
             # Define redirect paths based on user role
             REDIRECT_PATHS = {
                 "employee": "/dashboard/employee",
@@ -157,6 +175,18 @@ class UserService(ServiceBase):
             return UserData(username=user.username, email=user.email, role=role, redirect_path=redirect_path)
 
         raise Fault(faultcode="Client", faultstring="Invalid credentials")
+    
+    @rpc(ComplexUser, _returns=ComplexUser)
+    def update_user(self, user: ComplexUser) -> str:
+        try:
+            usr = User.objects.get(username=user.username)
+            usr.email = user.email
+            usr.password = make_password(user.password)
+            usr.role = user.role
+            usr.save()
+            return f"User {user.username} updated successfully with role {user.role}!"
+        except User.DoesNotExist:
+            raise ObjectDoesNotExist(f"User {user.username} does not exist.")
 
 
 # SOAP Application
