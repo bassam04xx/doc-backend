@@ -5,40 +5,18 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.hashers import make_password
 from django.core.validators import validate_email
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.core.exceptions import  ObjectDoesNotExist
 from django.db import IntegrityError
 from user.complexTypes import User as ComplexUser
 from user.services.user_services import UserService
 from spyne.model.primitive import AnyDict  
+from user.validators import validate_user, validate_credentials
 
 VALID_ROLES = ["manager", "employee"]  
 
 User = get_user_model()
 
 user_service = UserService()
-
-
-def validate_credentials(user: ComplexUser):
-    try:
-        validate_email(user.email)
-    except ValidationError:
-        raise Fault(faultcode="Client", faultstring="Invalid email format.")
-    if not user.first_name or not user.last_name:
-        raise Fault(faultcode="Client", faultstring="First name and last name are required.")
-    if not user.password:
-        raise Fault(faultcode="Client", faultstring="Password is required.")
-
-def validate_user(user: ComplexUser):
-    validate_credentials(user)
-    if user.role not in VALID_ROLES:
-        raise Fault(faultcode="Client", faultstring=f"Invalid role. Valid roles: {', '.join(VALID_ROLES)}")
-
-def validate_admin(user: ComplexUser):
-    validate_credentials(user)
-    if user.role != "admin":
-        raise Fault(faultcode="Client", faultstring=f"Invalid role !")
-
-
 
 
 class UserSOAPService(ServiceBase):
@@ -55,7 +33,8 @@ class UserSOAPService(ServiceBase):
     @rpc(ComplexUser, _returns=Unicode)
     def register_admin(self, user: ComplexUser):
         try:
-            validate_admin(user)
+            validate_credentials(user)
+            user.role = "admin"
             new_user = user_service.create_user(user)
             return f"Admin {user.username} registered successfully!"
         except IntegrityError:
@@ -93,7 +72,7 @@ class UserSOAPService(ServiceBase):
     @rpc(ComplexUser, _returns=ComplexUser)
     def update_admin(self, user: ComplexUser):
         try:
-            validate_admin(user)
+            validate_credentials(user)
             updated_user = user_service.update_user(user)
             return updated_user
         except User.DoesNotExist:
@@ -113,8 +92,7 @@ class UserSOAPService(ServiceBase):
             user_service.delete_user(userId)
         except User.DoesNotExist:
             raise ObjectDoesNotExist(f"User with ID {userId} does not exist.")
-          
-    
+        
     
 
 # SOAP Application Setup
