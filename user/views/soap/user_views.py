@@ -33,9 +33,8 @@ def extract_jwt_from_headers(context):
 class UserSOAPService(ServiceBase):
 
     @rpc(ComplexUser, _returns=Unicode)
-    def register_user(self, user: ComplexUser, context):
+    def register_user(self, user: ComplexUser):
         try:
-
             validate_user(user)
             new_user = user_service.create_user(user)
             return f"User {user.username} registered successfully with role {user.role}!"
@@ -45,8 +44,9 @@ class UserSOAPService(ServiceBase):
             raise Fault(faultcode="Client", faultstring=str(e))
 
     @rpc(ComplexUser, _returns=Unicode)
-    def register_admin(self, user: ComplexUser, context):
+    def register_admin(self, user: ComplexUser):
         try:
+            context = self.context  # Get context from self
             token_payload = extract_jwt_from_headers(context)
             validate_credentials(user)
             user.role = "admin"
@@ -62,22 +62,22 @@ class UserSOAPService(ServiceBase):
         user = authenticate(username=username, password=password)
         if not user:
             raise Fault(faultcode="Client", faultstring="Invalid credentials")
-            # Define redirect paths for different roles
+
         redirect_paths = {
-                "employee": "/dashboard/employee",
-                "manager": "/dashboard/manager",
-                "admin": "/dashboard/admin",
-            }
+            "employee": "/dashboard/employee",
+            "manager": "/dashboard/manager",
+            "admin": "/dashboard/admin",
+        }
         redirect_path = redirect_paths.get(user.role, "/dashboard")
 
         return ComplexUser(username=user.username, email=user.email, role=user.role,
-                               redirect_path=redirect_path)
+                           redirect_path=redirect_path)
 
     @rpc(ComplexUser, _returns=ComplexUser)
     def update_user(self, user: ComplexUser):
         """Update user details."""
         try:
-            validate_user(user)  # Validate user input
+            validate_user(user)
             updated_user = user_service.update_user(user)
             return updated_user
         except User.DoesNotExist:
@@ -92,7 +92,7 @@ class UserSOAPService(ServiceBase):
         except User.DoesNotExist:
             raise ObjectDoesNotExist(f"User {user.username} does not exist.")
 
-    @rpc(Integer, AnyDict, _returns=ComplexUser)  # Specify the types
+    @rpc(Integer, AnyDict, _returns=ComplexUser)
     def patch_user(self, userId: int, updated_data: dict):
         try:
             updated_user = user_service.patch_user(userId, updated_data)
@@ -100,7 +100,6 @@ class UserSOAPService(ServiceBase):
         except User.DoesNotExist:
             raise ObjectDoesNotExist(f"User with ID {userId} does not exist.")
 
-    # Todo validate userId is admin
     @rpc(int, _returns=None)
     def delete_user(self, userId: int):
         try:
@@ -109,7 +108,6 @@ class UserSOAPService(ServiceBase):
             raise ObjectDoesNotExist(f"User with ID {userId} does not exist.")
 
 
-# SOAP Application Setup
 soap_app = Application(
     [UserSOAPService],
     tns="project.user",
@@ -117,5 +115,4 @@ soap_app = Application(
     out_protocol=Soap11(),
 )
 
-# Django Soap App with CSRF exemption
 django_soap_app = csrf_exempt(DjangoApplication(soap_app))
