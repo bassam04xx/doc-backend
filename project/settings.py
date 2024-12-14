@@ -61,6 +61,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'user',
+    'old_documents',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -110,8 +112,19 @@ DATABASES = {
         'PASSWORD': config('DB_PASSWORD'),
         'HOST': config('DB_HOST', default='127.0.0.1'),
         'PORT': config('DB_PORT', default='5432'),
-    }
+    },
+    'old_db': {
+        
+        'ENGINE': 'django.db.backends.postgresql',  
+        'NAME': config('OLD_DB_NAME'),  
+        'USER': config('OLD_DB_USER'),  
+        'PASSWORD': config('OLD_DB_PASSWORD'),  
+        'HOST': config('OLD_DB_HOST'),  
+        'PORT': config('OLD_DB_PORT'),  
+    },
 }
+DATABASE_ROUTERS = ['old_documents.database_router.OldDatabaseRouter']
+
 
 # Example of using .env for the secret key
 SECRET_KEY = config('SECRET_KEY')
