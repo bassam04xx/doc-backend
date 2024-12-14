@@ -1,12 +1,12 @@
 from spyne import Fault
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
-from user.complexTypes import User as ComplexUser
+from user.models import User
 
 VALID_ROLES = ["manager", "employee"]
 
 
-def validate_credentials(user: ComplexUser):
+def validate_credentials(user: User):
     try:
         validate_email(user.email)
     except ValidationError:
@@ -17,7 +17,7 @@ def validate_credentials(user: ComplexUser):
         raise Fault(faultcode="Client", faultstring="Password must be at least 8 characters long.")
 
 
-def validate_user(user: ComplexUser):
+def validate_user(user: User):
     validate_credentials(user)
     if user.role not in VALID_ROLES:
         raise Fault(faultcode="Client", faultstring=f"Invalid role. Valid roles: {', '.join(VALID_ROLES)}")

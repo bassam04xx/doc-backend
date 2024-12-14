@@ -1,6 +1,10 @@
 import jwt
 from django.conf import settings
 from datetime import datetime, timedelta
+from user.complexTypes import User as ComplexUser
+from user.models import User
+
+from spyne import Fault
 
 
 def generate_jwt(payload: dict):
@@ -18,3 +22,46 @@ def validate_jwt(token: str):
         raise Exception('Token has expired')
     except jwt.InvalidTokenError:
         raise Exception('Invalid token')
+
+
+def extract_jwt_from_headers(context):
+    try:
+        headers = context.transport.req.headers
+        auth_header = headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            raise Fault(faultcode="Client", faultstring="Authorization header is missing or invalid.")
+        token = auth_header.split(' ')[1]
+        return validate_jwt(token)
+    except Exception as e:
+        raise Fault(faultcode="Client", faultstring=str(e))
+
+
+def get_redirect_path(user_role):
+    redirect_paths = {
+        "employee": "/dashboard/employee",
+        "manager": "/dashboard/manager",
+        "admin": "/dashboard/admin",
+    }
+    return redirect_paths.get(user_role, "/dashboard")
+
+
+def complex_user_to_model_user(user: ComplexUser):
+    return User(
+        username=user.username,
+        email=user.email,
+        password=user.password,
+        role=user.role,
+        first_name=user.first_name,
+        last_name=user.last_name
+    )
+
+
+def model_user_to_complex_user(user: User):
+    return ComplexUser(
+        username=user.username,
+        email=user.email,
+        password=user.password,
+        role=user.role,
+        first_name=user.first_name,
+        last_name=user.last_name
+    )
