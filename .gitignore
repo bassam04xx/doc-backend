@@ -2,3 +2,13 @@ venv/
 .venv/
 pycache/
 __pycache__/
+
+db.sqlite3
+
+.idea/
+
+*.pyc
+*.pyo
+*.pyd
+
+.DS_Store

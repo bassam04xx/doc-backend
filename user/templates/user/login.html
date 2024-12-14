@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+</head>
+<body>
+    <h1>Login</h1>
+    <form id="loginForm">
+        <label for="username">Username:</label><br>
+        <input type="text" id="username" name="username" required><br><br>
+
+        <label for="password">Password:</label><br>
+        <input type="password" id="password" name="password" required><br><br>
+
+        <button type="button" onclick="loginUser()">Login</button>
+    </form>
+
+    <p id="message"></p>
+
+    <script>
+        async function loginUser() {
+            const formData = new FormData(document.getElementById('loginForm'));
+            const payload = `
+                <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:usr="project.user">
+                    <soapenv:Header/>
+                    <soapenv:Body>
+                        <usr:login_user>
+                            <usr:username>${formData.get('username')}</usr:username>
+                            <usr:password>${formData.get('password')}</usr:password>
+                        </usr:login_user>
+                    </soapenv:Body>
+                </soapenv:Envelope>
+            `;
+            
+            const response = await fetch('/user/soap/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/xml' },
+                body: payload,
+            });
+    
+            const text = await response.text();
+            document.getElementById('message').textContent = response.ok ? "Login successful!" : text;
+        }
+    </script>
+    
+</body>
+</html>
