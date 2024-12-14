@@ -9,7 +9,6 @@ debug.log
 
 db.sqlite3
 
-.idea/
 
 *.pyc
 *.pyo
