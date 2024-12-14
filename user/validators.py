@@ -3,8 +3,8 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from user.complexTypes import User as ComplexUser
 
-
 VALID_ROLES = ["manager", "employee"]
+
 
 def validate_credentials(user: ComplexUser):
     try:
@@ -15,6 +15,7 @@ def validate_credentials(user: ComplexUser):
         raise Fault(faultcode="Client", faultstring="First name and last name are required.")
     if not user.password or len(user.password) < 8:
         raise Fault(faultcode="Client", faultstring="Password must be at least 8 characters long.")
+
 
 def validate_user(user: ComplexUser):
     validate_credentials(user)

@@ -5,14 +5,14 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.hashers import make_password
 from django.core.validators import validate_email
-from django.core.exceptions import  ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 from user.complexTypes import User as ComplexUser
 from user.services.user_services import UserService
-from spyne.model.primitive import AnyDict  
+from spyne.model.primitive import AnyDict
 from user.validators import validate_user, validate_credentials
 
-VALID_ROLES = ["manager", "employee"]  
+VALID_ROLES = ["manager", "employee"]
 
 User = get_user_model()
 
@@ -23,12 +23,13 @@ class UserSOAPService(ServiceBase):
     @rpc(ComplexUser, _returns=Unicode)
     def register_user(self, user: ComplexUser):
         try:
-            validate_user(user)  
+            validate_user(user)
             new_user = user_service.create_user(user)
             return f"User {user.username} registered successfully with role {user.role}!"
+        except IntegrityError:
+            raise Fault(faultcode="Client", faultstring="Username or email already exists.")
         except Exception as e:
-            raise Fault(faultcode="Server", faultstring=str(e))
-        
+            raise Fault(faultcode="Client", faultstring=str(e))
 
     @rpc(ComplexUser, _returns=Unicode)
     def register_admin(self, user: ComplexUser):
@@ -42,8 +43,7 @@ class UserSOAPService(ServiceBase):
         except Exception as e:
             raise Fault(faultcode="Server", faultstring="An unexpected error occurred.")
 
-
-    @rpc(Unicode,Unicode, _returns=ComplexUser)
+    @rpc(Unicode, Unicode, _returns=ComplexUser)
     def login_user(self, username, password):
         """Login user and return role-specific redirect path."""
         user_obj = authenticate(username=username, password=password)
@@ -56,7 +56,8 @@ class UserSOAPService(ServiceBase):
             }
             redirect_path = redirect_paths.get(user_obj.role, "/dashboard")
 
-            return ComplexUser(username=user_obj.username, email=user_obj.email, role=user_obj.role, redirect_path=redirect_path)
+            return ComplexUser(username=user_obj.username, email=user_obj.email, role=user_obj.role,
+                               redirect_path=redirect_path)
         raise Fault(faultcode="Client", faultstring="Invalid credentials")
 
     @rpc(ComplexUser, _returns=ComplexUser)
@@ -85,6 +86,7 @@ class UserSOAPService(ServiceBase):
             return updated_user
         except User.DoesNotExist:
             raise ObjectDoesNotExist(f"User with ID {userId} does not exist.")
+
     # Todo validate userId is admin
     @rpc(int, _returns=None)
     def delete_user(self, userId: int):
@@ -92,8 +94,7 @@ class UserSOAPService(ServiceBase):
             user_service.delete_user(userId)
         except User.DoesNotExist:
             raise ObjectDoesNotExist(f"User with ID {userId} does not exist.")
-        
-    
+
 
 # SOAP Application Setup
 soap_app = Application(
