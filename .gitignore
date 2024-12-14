@@ -2,6 +2,10 @@ venv/
 .venv/
 pycache/
 __pycache__/
+.idea/
+
+
+debug.log
 
 db.sqlite3
 
