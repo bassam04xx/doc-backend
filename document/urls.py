@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 from .views import DocumentViewSet, upload_document_form, get_document_form
 
 router = DefaultRouter()
-router.register(r'documents', DocumentViewSet, basename='document')
+router.register(r'', DocumentViewSet, basename='document')
 
 urlpatterns = [
     path('upload-form/', upload_document_form, name='upload-document-form'),

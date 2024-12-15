@@ -6,6 +6,7 @@ class OldDocument(models.Model):
     category = models.CharField(max_length=255)  # Category as a string
     filename = models.CharField(max_length=255)  # Filename
     created_at = models.DateTimeField()     # Timestamp of creation
+    status = models.CharField(max_length=255, default='pending')  # Status of the document
 
     class Meta:
         db_table = 'old_documents'  # Name of the old table

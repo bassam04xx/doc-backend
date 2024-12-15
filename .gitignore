@@ -4,11 +4,7 @@ pycache/
 __pycache__/
 .idea/
 
-
 debug.log
-
-db.sqlite3
-
 
 *.pyc
 *.pyo

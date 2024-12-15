@@ -3,8 +3,8 @@ from rest_framework.routers import DefaultRouter
 from .views import OldDocumentViewSet
 
 router = DefaultRouter()
-router.register(r'old_documents', OldDocumentViewSet)
+router.register(r'', OldDocumentViewSet)
 
 urlpatterns = [
-    path('api/', include(router.urls)),
+    path('', include(router.urls)),
 ]

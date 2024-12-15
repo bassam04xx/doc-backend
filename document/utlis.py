@@ -6,6 +6,9 @@ import os
 import google.generativeai as genai
 from requests import HTTPError
 import io
+import PyPDF2
+from transformers import pipeline
+
 
 
 
@@ -107,3 +110,23 @@ def download_file_from_drive(file_id):
     
     file_io.seek(0)
     return file_io
+
+def extract_text_from_pdf(pdf_file):
+    pdf_reader = PyPDF2.PdfReader(pdf_file)
+    text = ""
+    for page_num in range(len(pdf_reader.pages)):
+        page = pdf_reader.pages[page_num]
+        text += page.extract_text()
+    return text
+def classify_document(text: str) -> str:
+    # Predefined categories
+    categories = ["report", "contract", "invoice","day-off"]
+
+    # Load a pre-trained zero-shot classification pipeline from Hugging Face
+    classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+
+    # Perform classification
+    result = classifier(text, candidate_labels=categories)
+
+    predicted_category = result['labels'][0]
+    return predicted_category
