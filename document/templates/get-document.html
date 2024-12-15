@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download Document</title>
+</head>
+<body>
+    <h1>Download a Document</h1>
+    
+    <form id="getDocumentForm" action="{% url 'document-get-document' %}" method="post">
+        {% csrf_token %}
+        <div>
+            <label for="file_name">Enter File Name:</label>
+            <input type="text" id="file_name" name="file_name" required>
+        </div>
+        <button type="submit">Download Document</button>
+    </form>
+    
+    <!-- Possible feedback area for users -->
+    <div id="feedback"></div>
+
+</body>
+</html>
