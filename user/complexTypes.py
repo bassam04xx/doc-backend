@@ -1,4 +1,4 @@
-from spyne import ComplexModel, Unicode
+from spyne import ComplexModel, Unicode, Integer, Boolean
 from spyne.model.enum import Enum
 
 
@@ -16,6 +16,7 @@ from spyne.model.enum import Enum
 
 
 class User(ComplexModel):
+    id = Integer(required=False)
     username = Unicode
     email = Unicode
     password = Unicode
@@ -23,3 +24,6 @@ class User(ComplexModel):
     first_name = Unicode
     last_name = Unicode
     manager_type = Unicode
+    is_active = Boolean(required=False)
+    is_superuser = Boolean(required=False)
+    is_staff = Boolean(required=False)

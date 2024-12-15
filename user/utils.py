@@ -45,25 +45,27 @@ def get_redirect_path(user_role):
     return redirect_paths.get(user_role, "/dashboard")
 
 
-def complex_user_to_model_user(user: ComplexUser):
+def complex_user_to_model_user(complex_user: ComplexUser) -> User:
     return User(
-        username=user.username,
-        email=user.email,
-        password=user.password,
-        role=user.role,
-        manager_type=user.manager_type,
-        first_name=user.first_name,
-        last_name=user.last_name
+        username=complex_user.username,
+        email=complex_user.email,
+        password=complex_user.password,
+        role=complex_user.role,
+        first_name=complex_user.first_name,
+        last_name=complex_user.last_name,
+        manager_type=complex_user.manager_type if complex_user.role == 'manager' else None
     )
 
 
 def model_user_to_complex_user(user: User):
     return ComplexUser(
+        id=user.id,
         username=user.username,
         email=user.email,
         password=user.password,
         role=user.role,
         manager_type=user.manager_type,
         first_name=user.first_name,
-        last_name=user.last_name
+        last_name=user.last_name,
+        is_active=user.is_active,
     )

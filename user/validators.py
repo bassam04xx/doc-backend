@@ -23,6 +23,7 @@ def validate_credentials(user: User):
 
 
 def validate_user(user: User):
+    clean_user = user.clean()
     validate_credentials(user)
     if user.role not in VALID_ROLES:
         raise Fault(faultcode="Client", faultstring=f"Invalid role. Valid roles: {', '.join(VALID_ROLES)}")

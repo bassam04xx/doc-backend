@@ -2,9 +2,10 @@ venv/
 .venv/
 pycache/
 __pycache__/
-.idea/
 
-debug.log
+db.sqlite3
+
+.idea/
 
 *.pyc
 *.pyo
@@ -12,3 +13,5 @@ debug.log
 
 .DS_Store
 
+
+debug.log

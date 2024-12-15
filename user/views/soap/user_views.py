@@ -7,7 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 from user.complexTypes import User as ComplexUser
 from user.services.user_services import create_user, get_all_users, get_users_by_role, patch_user, get_user_by_id, \
-    update_user, delete_user, login_user, get_user_by_username
+    update_user, delete_user, login_user, get_user_by_username, get_user_role
 from spyne.model.primitive import AnyDict
 from user.validators import validate_user
 from user.utils import complex_user_to_model_user, model_user_to_complex_user
@@ -35,14 +35,18 @@ class UserSOAPService(ServiceBase):
 
     @rpc(Unicode, Unicode, _returns=Unicode)
     def login_user(self, username, password):
-        user = get_user_by_username(username)
-        if user and not user.is_active:
-            raise Fault(faultcode="Client", faultstring="your account is not active. Please contact admin.")
         try:
-            token = login_user(username, password)
-            return token
+            user = get_user_by_username(username)
+            if not user.is_active:
+                raise Fault(
+                    faultcode="Client",
+                    faultstring="Your account is not active. Please contact admin."
+                )
+            return login_user(username, password)
+        except Fault as fault:
+            raise fault
         except Exception as e:
-            raise Fault(faultcode="client", faultstring=str(e))
+            raise Fault(faultcode="Client", faultstring=str(e))
 
     @rpc(ComplexUser, _returns=ComplexUser)
     def update_user(self, complex_user: ComplexUser):
@@ -75,6 +79,15 @@ class UserSOAPService(ServiceBase):
         except Exception as e:
             raise Fault(faultcode="Server", faultstring=str(e))
 
+    @rpc(_returns=Iterable(ComplexUser))
+    def get_all_users(self):
+        try:
+            users = get_all_users()
+            complex_users = [model_user_to_complex_user(user) for user in users]
+            return complex_users
+        except Exception as e:
+            raise Fault(faultcode="Server", faultstring=str(e))
+
     @rpc(Unicode, _returns=Iterable(ComplexUser))
     def get_users_by_role(self, role: str):
         try:
@@ -93,6 +106,14 @@ class UserSOAPService(ServiceBase):
             raise Fault(faultcode="Client", faultstring=f"User with ID {userId} does not exist.")
         except Exception as e:
             raise Fault(faultcode="Server", faultstring=str(e))
+
+    @rpc(Unicode, _returns=Unicode)
+    def get_user_role(self, token: str):
+        try:
+            role = get_user_role(token)
+            return role
+        except Exception as e:
+            raise Fault(faultcode="Client", faultstring=str(e))
 
 
 soap_app = Application(
