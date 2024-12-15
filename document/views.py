@@ -7,7 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import Document
 from .serializers import DocumentSerializer
-from .utlis import upload, summarize_document , get_file_by_name
+from .utlis import download_file_from_drive, upload, summarize_document , get_file_by_name
 import tempfile
 
 def upload_document_form(request):
@@ -65,14 +65,18 @@ class DocumentViewSet(viewsets.ModelViewSet):
     
         serializer = self.serializer_class(document)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['post'])  
     def get_document(self, request):
         file_name = request.data.get('file_name')
-        file_url = get_file_by_name(file_name)  # Modify this to return the URL
+        file_id = get_file_by_name(file_name)
 
-        if not file_url:
+        if not file_id:
             return Response({'error': 'File not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Redirect to the Google Drive file URL
-        return HttpResponseRedirect(file_url)
-    
+        # Download the file from Google Drive
+        file_io = download_file_from_drive(file_id)
+
+        # Return the file as a download
+
+        response = FileResponse(file_io, as_attachment=True, filename=file_name)
+        return response

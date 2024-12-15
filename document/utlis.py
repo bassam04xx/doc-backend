@@ -1,10 +1,13 @@
 from decouple import config
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
-from googleapiclient.http import MediaFileUpload
+from googleapiclient.http import MediaFileUpload,MediaIoBaseDownload
 import os
 import google.generativeai as genai
 from requests import HTTPError
+import io
+
+
 
 SCOPES = ['https://www.googleapis.com/auth/drive']
 SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(__file__), 'service-account.json')
@@ -18,21 +21,35 @@ def authenticate():
 
 def upload(file_path, file_name):
     service = authenticate()
-    
+
     file_metadata = {
         'name': file_name,
         'parents': [PARENT_FOLDER_ID]
     }
     media = MediaFileUpload(file_path, resumable=True)
-    
+
+    # Upload the file
     file = service.files().create(
         body=file_metadata,
         media_body=media,
         fields='id'
     ).execute()
-    
-    print(f"File '{file_name}' uploaded successfully. File ID: {file.get('id')}")
 
+    file_id = file.get('id')
+
+    # Set file permissions to "Anyone with the link can view"
+    permission = {
+        'type': 'anyone',
+        'role': 'reader'
+    }
+    service.permissions().create(
+        fileId=file_id,
+        body=permission
+    ).execute()
+
+    print(f"File '{file_name}' uploaded successfully. File ID: {file_id}")
+
+    return file_id  # Return the file ID if needed
 # Make sure to import MediaFileUpload
 
 def summarize_document(filename: str):
@@ -54,35 +71,39 @@ def summarize_document(filename: str):
         summary_text = None
 
     return summary_text
-def get_file_by_name( filename):
-    """
-    Search for a file in Google Drive by its filename.
-
-    :param service: Authorized Drive API service instance.
-    :param filename: Name of the file to search for.
-    :return: List of files matching the filename.
-    """
+def get_file_by_name(filename):
     service = authenticate()
     try:
         # Use the files().list() method to search for files by name
         results = service.files().list(
-            q=f"name = '{filename}'",
+            q=f"name = '{filename}' and trashed = false",
             spaces='drive',
-            fields="files(id, name, mimeType, modifiedTime)",
+            fields="files(id, name)",
         ).execute()
-        # Extract the files from the results
+        
         files = results.get('files', [])
 
         if not files:
             print("No files found.")
-            return []
-
-       # Get the first file's ID to construct URL
-        file_id = files[0]['id']
-        file_url = f"https://drive.google.com/file/d/{file_id}/view?usp=sharing"
-
-        return file_url
+            return None
+        
+        # Return only the file ID
+        return files[0]['id']
 
     except HTTPError as error:
         print(f"An error occurred: {error}")
-        return ""
+        return None
+
+def download_file_from_drive(file_id):
+    service = authenticate()
+    request = service.files().get_media(fileId=file_id)
+    file_io = io.BytesIO()
+    downloader = MediaIoBaseDownload(file_io, request)
+    
+    done = False
+    while not done:
+        status, done = downloader.next_chunk()
+        print(f"Download progress: {int(status.progress() * 100)}%")
+    
+    file_io.seek(0)
+    return file_io

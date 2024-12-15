@@ -8,17 +8,48 @@
 <body>
     <h1>Download a Document</h1>
     
-    <form id="getDocumentForm" action="{% url 'document-get-document' %}" method="post">
+    <form id="getDocumentForm" method="post">
         {% csrf_token %}
         <div>
             <label for="file_name">Enter File Name:</label>
             <input type="text" id="file_name" name="file_name" required>
         </div>
-        <button type="submit">Download Document</button>
+        <button type="submit">Download</button>
     </form>
     
-    <!-- Possible feedback area for users -->
     <div id="feedback"></div>
+
+    <script>
+        document.getElementById('getDocumentForm').onsubmit = async function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(this);
+            const fileName = document.getElementById('file_name').value;
+
+            try {
+                const response = await fetch("{% url 'document-get-document' %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not okay');
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+
+                // Open the file in a new tab
+                window.open(url, '_blank');
+
+            } catch (error) {
+                document.getElementById('feedback').innerText = 'Error: ' + error.message;
+            }
+        };
+    </script>
 
 </body>
 </html>
