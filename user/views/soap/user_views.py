@@ -27,7 +27,7 @@ class UserSOAPService(ServiceBase):
                 return (f"User {model_user.username} registered successfully with role {model_user.role}! Please wait "
                         f"for admin approval.")
             token = login_user(model_user.username, model_user.password)
-            return f"User {model_user.username} registered successfully with role {model_user.role}! Token: {token}"
+            return token
         except IntegrityError:
             raise Fault(faultcode="Client", faultstring="Username or email already exists.")
         except Exception as e:
