@@ -7,9 +7,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 from user.complexTypes import User as ComplexUser
 from user.services.user_services import create_user, get_all_users, get_users_by_role, patch_user, get_user_by_id, \
-    update_user, delete_user, login_user
+    update_user, delete_user, login_user, get_user_by_username
 from spyne.model.primitive import AnyDict
-from user.validators import validate_user, validate_credentials
+from user.validators import validate_user
 from user.utils import complex_user_to_model_user, model_user_to_complex_user
 
 User = get_user_model()
@@ -35,6 +35,9 @@ class UserSOAPService(ServiceBase):
 
     @rpc(Unicode, Unicode, _returns=Unicode)
     def login_user(self, username, password):
+        user = get_user_by_username(username)
+        if user and not user.is_active:
+            raise Fault(faultcode="Client", faultstring="your account is not active. Please contact admin.")
         try:
             token = login_user(username, password)
             return token

@@ -51,6 +51,7 @@ def complex_user_to_model_user(user: ComplexUser):
         email=user.email,
         password=user.password,
         role=user.role,
+        manager_type=user.manager_type,
         first_name=user.first_name,
         last_name=user.last_name
     )
@@ -62,6 +63,7 @@ def model_user_to_complex_user(user: User):
         email=user.email,
         password=user.password,
         role=user.role,
+        manager_type=user.manager_type,
         first_name=user.first_name,
         last_name=user.last_name
     )

@@ -99,3 +99,23 @@ def get_user_by_id(user_id: int) -> User:
         raise ValueError(f"User with ID {user_id} does not exist.")
     except Exception as e:
         raise e
+
+
+def get_user_by_username(username: str) -> User:
+    try:
+        user = User.objects.get(username=username)
+        return user
+    except ObjectDoesNotExist:
+        raise ValueError(f"User with username {username} does not exist.")
+    except Exception as e:
+        raise e
+
+
+def get_user_by_email(email: str) -> User:
+    try:
+        user = User.objects.get(email=email)
+        return user
+    except ObjectDoesNotExist:
+        raise ValueError(f"User with email {email} does not exist.")
+    except Exception as e:
+        raise e

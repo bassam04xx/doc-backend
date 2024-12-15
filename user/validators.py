@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from user.models import User
 
 VALID_ROLES = ["manager", "employee"]
+VALID_MANAGER_TYPES = ["hr", "finance", "reporting"]
 
 
 def validate_credentials(user: User):
@@ -15,6 +16,10 @@ def validate_credentials(user: User):
         raise Fault(faultcode="Client", faultstring="First name and last name are required.")
     if not user.password or len(user.password) < 8:
         raise Fault(faultcode="Client", faultstring="Password must be at least 8 characters long.")
+    if user.role == "manager" and not user.manager_type:
+        raise Fault(faultcode="Client", faultstring="Manager type must be specified for users with the 'manager' role.")
+    if user.role != "manager" and user.manager_type:
+        raise Fault(faultcode="Client", faultstring="Only users with the 'manager' role can have a manager type.")
 
 
 def validate_user(user: User):
