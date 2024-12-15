@@ -14,4 +14,4 @@ class Document(models.Model):
         return self.file_name
 
     class Meta:
-        db_table = 'document'  # Replace with your preferred table name
+        db_table = 'documents'  # Replace with your preferred table name
