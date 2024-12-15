@@ -35,9 +35,12 @@ class UserSOAPService(ServiceBase):
 
     @rpc(Unicode, Unicode, _returns=Unicode)
     def login_user(self, username, password):
-        user = get_user_by_username(username)
-        if user and not user.is_active:
-            raise Fault(faultcode="Client", faultstring="your account is not active. Please contact admin.")
+        try:
+            user = get_user_by_username(username)
+            if not user.is_active:
+                raise Fault(faultcode="Client", faultstring="your account is not active. Please contact admin.")
+        except Exception as e:
+            raise Fault(faultcode="Client", faultstring=str(e))
         try:
             token = login_user(username, password)
             return token
@@ -55,7 +58,7 @@ class UserSOAPService(ServiceBase):
         except User.DoesNotExist:
             raise Fault(faultcode="Client", faultstring=f"User {complex_user.username} does not exist.")
 
-    @rpc(Integer, AnyDict, _returns=ComplexUser)  # Specify the types
+    @rpc(Integer, AnyDict, _returns=ComplexUser)
     def patch_user(self, userId: int, updated_data: dict):
         try:
             updated_user = patch_user(userId, updated_data)
@@ -84,7 +87,6 @@ class UserSOAPService(ServiceBase):
         except Exception as e:
             raise Fault(faultcode="Server", faultstring=str(e))
 
-    # Todo validate userId is admin
     @rpc(int, _returns=None)
     def delete_user(self, userId: int):
         try:
@@ -96,7 +98,6 @@ class UserSOAPService(ServiceBase):
             raise Fault(faultcode="Server", faultstring=str(e))
 
 
-# SOAP Application Setup
 soap_app = Application(
     [UserSOAPService],
     tns="project.user",
@@ -104,5 +105,4 @@ soap_app = Application(
     out_protocol=Soap11(),
 )
 
-# Django Soap App with CSRF exemption
 django_soap_app = csrf_exempt(DjangoApplication(soap_app))

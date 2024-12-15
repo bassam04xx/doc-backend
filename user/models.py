@@ -25,6 +25,9 @@ class User(AbstractUser):
         blank=True
     )
 
+    # Make email unique
+    email = models.EmailField(unique=True)
+
     class Meta:
         db_table = 'users'
 
