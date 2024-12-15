@@ -10,19 +10,12 @@ class User(AbstractUser):
         ('employee', 'Employee'),
     ]
 
-    MANAGER_TYPE_CHOICES = [
-        ('hr', 'Human Resources'),
-        ('finance', 'Finance'),
-        ('reporting', 'Reporting'),
-    ]
-
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='employee')
 
-    manager_type = models.CharField(
-        max_length=10,
-        choices=MANAGER_TYPE_CHOICES,
+    manager_type = models.TextField(
         null=True,
-        blank=True
+        blank=True,
+        help_text="Specify the manager type (e.g., Human Resources, Finance, etc.) if the role is 'manager'."
     )
 
     # Make email unique

@@ -29,6 +29,7 @@ def create_user(user: User) -> User:
             email=user.email,
             password=user.password,
             role=user.role,
+            manager_type=user.manager_type,
             first_name=user.first_name,
             last_name=user.last_name,
             is_active=status

@@ -38,14 +38,15 @@ class UserSOAPService(ServiceBase):
         try:
             user = get_user_by_username(username)
             if not user.is_active:
-                raise Fault(faultcode="Client", faultstring="your account is not active. Please contact admin.")
+                raise Fault(
+                    faultcode="Client",
+                    faultstring="Your account is not active. Please contact admin."
+                )
+            return login_user(username, password)
+        except Fault as fault:
+            raise fault
         except Exception as e:
             raise Fault(faultcode="Client", faultstring=str(e))
-        try:
-            token = login_user(username, password)
-            return token
-        except Exception as e:
-            raise Fault(faultcode="client", faultstring=str(e))
 
     @rpc(ComplexUser, _returns=ComplexUser)
     def update_user(self, complex_user: ComplexUser):
