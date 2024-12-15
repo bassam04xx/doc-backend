@@ -1,6 +1,6 @@
 from django.core.exceptions import ObjectDoesNotExist
 
-from user.utils import generate_jwt
+from user.utils import generate_jwt, validate_jwt
 from django.contrib.auth import authenticate, get_user_model
 
 User = get_user_model()
@@ -15,6 +15,8 @@ def login_user(username, password):
         "email": user.email,
         "role": user.role,
     }
+    if user.role == "manager":
+        payload["manager_type"] = user.manager_type
     return generate_jwt(payload)
 
 
@@ -120,3 +122,28 @@ def get_user_by_email(email: str) -> User:
         raise ValueError(f"User with email {email} does not exist.")
     except Exception as e:
         raise e
+
+
+def get_user_role(token: str) -> str:
+    """
+    Extract the user role from the JWT token.
+
+    Args:
+        token (str): The JWT token.
+
+    Returns:
+        str: The user's role.
+
+    Raises:
+        Exception: If the token is invalid or the role is not found.
+    """
+    try:
+        payload = validate_jwt(token)
+        role = payload.get("role")
+        if not role:
+            raise Exception("User role not found in the token.")
+        if role not in ["employee", "manager", "admin"]:
+            raise Exception("Invalid user role.")
+        return role
+    except Exception as e:
+        raise Exception(f"Error extracting user role: {e}")

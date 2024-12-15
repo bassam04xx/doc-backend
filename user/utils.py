@@ -59,11 +59,13 @@ def complex_user_to_model_user(complex_user: ComplexUser) -> User:
 
 def model_user_to_complex_user(user: User):
     return ComplexUser(
+        id=user.id,
         username=user.username,
         email=user.email,
         password=user.password,
         role=user.role,
         manager_type=user.manager_type,
         first_name=user.first_name,
-        last_name=user.last_name
+        last_name=user.last_name,
+        is_active=user.is_active,
     )
