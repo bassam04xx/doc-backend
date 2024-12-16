@@ -4,8 +4,7 @@ from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from rest_framework.permissions import IsAuthenticated
-from .permissions import IsAdmin, IsManager, IsEmployee
+from project.permissions import IsAuthenticated, IsAdmin, IsManager, IsEmployee
 from .models import Document
 from .serializers import DocumentSerializer
 from .utils import (
@@ -16,7 +15,6 @@ from .utils import (
     summarize_document,
     get_file_by_name
 )
-from user.services.user_services import get_user_role
 import tempfile
 
 
@@ -34,7 +32,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentSerializer
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
-    @action(detail=False, methods=['post'], permission_classes=[IsAdmin | IsEmployee])
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated, IsAdmin | IsEmployee])
     def upload_and_save(self, request):
         """
         Handles uploading a document, extracting its category and summary, 
@@ -82,7 +80,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
         serializer = self.serializer_class(document)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(detail=False, methods=['post'], permission_classes=[IsAdmin |IsEmployee | IsManager ])
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated, IsEmployee | IsAdmin | IsManager])
     def get_document(self, request):
         """
         Fetches a document by its file name and returns it as a download.
@@ -103,11 +101,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
         response = FileResponse(file_io, as_attachment=True, filename=file_name)
         return response
 
-
-
-      
-
-    @action(detail=False, methods=['post'], permission_classes=[IsAdmin | IsEmployee | IsManager])
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated, IsAdmin | IsEmployee | IsManager])
     def integrateOldDocument(self, request):
         """
         Integrates an existing document into the system by creating a new Document record.
