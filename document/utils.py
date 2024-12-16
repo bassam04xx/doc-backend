@@ -14,7 +14,7 @@ from transformers import pipeline
 
 SCOPES = ['https://www.googleapis.com/auth/drive']
 SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(__file__), 'service-account.json')
-PARENT_FOLDER_ID = '1blDKeNNuJyO_HRrjXxxMyxDsajHH4t6A'
+PARENT_FOLDER_ID = config('PARENT_FOLDER_ID')
 
 
 def authenticate():
