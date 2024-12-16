@@ -7,7 +7,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 from user.complexTypes import User as ComplexUser
 from user.services.user_services import create_user, get_all_users, get_users_by_role, patch_user, get_user_by_id, \
-    update_user, delete_user, login_user, get_user_by_username, get_user_role
+    update_user, delete_user, login_user, get_user_by_username, get_user_role, toggle_account_status, get_user_status, \
+    get_user_username
 from spyne.model.primitive import AnyDict
 from user.validators import validate_user
 from user.utils import complex_user_to_model_user, model_user_to_complex_user
@@ -114,6 +115,21 @@ class UserSOAPService(ServiceBase):
             return role
         except Exception as e:
             raise Fault(faultcode="Client", faultstring=str(e))
+
+    @rpc(Integer, _returns=Unicode)
+    def toggle_account_status(self, userId: int):
+        try:
+            toggle_account_status(userId)
+            status = {
+                True: "active",
+                False: "inactive"
+            }[get_user_status(userId)]
+            username = get_user_username(userId)
+            return f"User {username} is now {status}."
+        except User.DoesNotExist:
+            raise Fault(faultcode="Client", faultstring=f"User with ID {userId} does not exist.")
+        except Exception as e:
+            raise Fault(faultcode="Server", faultstring=str(e))
 
 
 soap_app = Application(

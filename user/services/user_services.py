@@ -147,3 +147,35 @@ def get_user_role(token: str) -> str:
         return role
     except Exception as e:
         raise Exception(f"Error extracting user role: {e}")
+
+
+def toggle_account_status(user_id: int) -> User:
+    try:
+        user = User.objects.get(id=user_id)
+        user.is_active = not user.is_active
+        user.save()
+        return user
+    except ObjectDoesNotExist:
+        raise ValueError(f"User with ID {user_id} does not exist.")
+    except Exception as e:
+        raise e
+
+
+def get_user_status(user_id: int) -> bool:
+    try:
+        user = User.objects.get(id=user_id)
+        return user.is_active
+    except ObjectDoesNotExist:
+        raise ValueError(f"User with ID {user_id} does not exist.")
+    except Exception as e:
+        raise e
+
+
+def get_user_username(user_id: int) -> str:
+    try:
+        user = User.objects.get(id=user_id)
+        return user.username
+    except ObjectDoesNotExist:
+        raise ValueError(f"User with ID {user_id} does not exist.")
+    except Exception as e:
+        raise e
