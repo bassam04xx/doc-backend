@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'old_documents',
     'rest_framework',
     'corsheaders',
+    'workflow',
     
 ]
 

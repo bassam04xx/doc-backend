@@ -21,5 +21,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('user/', include('user.urls')),
     path('document/', include('document.urls')),
+    path('workflows/', include('workflow.urls')),
     path('old_documents/', include('old_documents.urls')),  # Add this line
 ]
