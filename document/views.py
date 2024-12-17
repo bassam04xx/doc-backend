@@ -14,7 +14,7 @@ from .utils import (
     extract_text_from_pdf,
     upload,
     summarize_document,
-    get_file_by_name
+    get_file_by_name, classify_custom_document, summarize_text
 )
 import tempfile
 
@@ -63,6 +63,56 @@ class DocumentViewSet(viewsets.ModelViewSet):
         print('Generating summary...')
         summary = summarize_document(file_name)
         print(f"Summary: {summary}")
+
+        # Collect metadata from the request
+        token = request.headers.get('Authorization')
+        token = token[len("Bearer "):]
+        print(f"Token: {token}")
+        owner_id = get_user_id(token)
+
+        manager_id = request.data.get('manager_id', 1)  # Default manager to admin (ID: 1)
+
+        # Create a Document object and save it to the database
+        document = Document.objects.create(
+            owner_id=owner_id,
+            category=category,
+            manager_id=manager_id,
+            summary=summary,
+            file_name=file_name,
+            status="pending"
+        )
+
+        serializer = self.serializer_class(document)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def upload_and_save_custom_document(self, request):
+        file = request.FILES.get('file')
+        if not file:
+            return Response({'error': 'File is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        file_name = file.name
+        print(f"Processing file: {file_name}")
+
+        # Save the uploaded file temporarily
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            for chunk in file.chunks():
+                temp_file.write(chunk)
+            temp_file_path = temp_file.name
+
+        print('Extracting category...')
+        category = classify_custom_document(extract_text_from_pdf(temp_file_path))
+        print(f"Category: {category}")
+
+        print('Generating summary...')
+        summary = summarize_document(extract_text_from_pdf(temp_file_path))
+        print(f"Summary: {summary}")
+
+        print('Uploading file...')
+        upload(temp_file_path, file_name)
+        print('File uploaded successfully.')
+
+
 
         # Collect metadata from the request
         token = request.headers.get('Authorization')

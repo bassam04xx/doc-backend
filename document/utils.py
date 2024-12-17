@@ -55,14 +55,15 @@ def upload(file_path, file_name):
 
 # Make sure to import MediaFileUpload
 
-def summarize_document(filename: str):
+def summarize_document(document_text: str):
     # Configure the Gemini API with your API key from the env file
     genai.configure(api_key=config('GEMINI_API_KEY'))
     model = genai.GenerativeModel('gemini-1.5-flash')
 
+
     # Create a prompt for the model
     prompt = (
-        f"@Google Drive Generate a detailed and concise summary  in the form of a paragraphe for the document titled : {filename}. ensurin g the content is purely descriptive, highly detailed, and suitable for use as a database description. please do not include in your response anything else and no need to say the doc name again. i want to mention the exact name and values  in the summary"
+        f"{document_text} Generate a detailed and concise summary  in the form of a paragraphe for the document titled . ensurin g the content is purely descriptive, highly detailed, and suitable for use as a database description. please do not include in your response anything else and no need to say the doc name again. i want to mention the exact name and values  in the summary"
     )
 
     # Generate a summary for the document
@@ -143,3 +144,49 @@ def classify_document(text: str) -> str:
     predicted_category = result['labels'][0]
     return predicted_category
 
+
+def classify_custom_document(text: str) -> str:
+    categories = [
+        "Documentation", "Design", "Proposal", "Memo", "Agreement", "Receipt", "Letter",
+        "Manual", "Presentation", "Email", "Resume", "Minutes", "Checklist", "Policy", "Procedure",
+        "Research Paper", "Whitepaper", "Guideline", "Testimonial", "Certificate", "Order",
+        "SOW (Statement of Work)", "Project Plan", "Budget", "Financial Statement", "Contract Amendment",
+        "Project Update", "Job Description", "Non-disclosure Agreement (NDA)", "Tender", "Legal Notice",
+        "Patent", "Press Release", "Event Flyer", "Newsletter", "Statement", "Application Form", "Transcript",
+        "Report Summary", "Project Charter", "Presentation Slides", "Terms and Conditions", "Agreement Addendum",
+        "Purchase Order", "Order Confirmation", "Business Letter", "Letter of Intent", "Internal Memo",
+        "Customer Feedback", "Work Order", "Audit Report", "Risk Assessment", "Compliance Report", "Tax Report",
+        "Logistics Report", "Contract Proposal", "Employee Handbook", "Employee Onboarding", "Training Materials",
+        "Sales Proposal", "Marketing Plan", "Client Brief", "Service Level Agreement (SLA)", "Product Specification",
+        "Performance Review", "Meeting Agenda", "Product Roadmap", "Change Request", "Job Application",
+        "Exit Interview", "Workplace Safety Plan", "Employee Evaluation", "Supplier Agreement", "Project Budget",
+        "Supplier Invoice", "Asset Management", "Health & Safety Report", "Vendor Contract", "Technical Documentation",
+        "Patent Application", "Purchase Requisition", "Event Proposal", "Business Continuity Plan", "Strategic Plan",
+        "Legal Brief", "Customer Agreement", "Travel Request", "Expense Report", "Software Release Notes",
+        "Audit Trail", "Project Milestones", "Service Report", "IT Incident Report", "Support Ticket",
+        "Client Feedback", "Team Meeting Notes", "Employee Benefits Guide", "Operational Plan",
+        "Board Meeting Minutes", "Company Newsletter", "Product Review", "Service Agreement", "Customer Service Log",
+        "Communication Plan", "Leadership Brief", "Marketing Report", "Team Performance Report",
+        "Crisis Management Plan"]
+
+    # Validate input
+    if not text or not isinstance(text, str):
+        raise ValueError("Input text must be a non-empty string.")
+    if not categories:
+        raise ValueError("Categories list must contain at least one label.")
+
+    # Load a pre-trained zero-shot classification pipeline from Hugging Face
+    classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+
+    # Perform classification
+    result = classifier(text, candidate_labels=categories)
+
+    predicted_category = result['labels'][0]
+    return predicted_category
+
+
+def summarize_text(text):
+    summarizer = pipeline("summarization")  # Chargement du modèle de résumé
+    summary = summarizer(text, max_length=130, min_length=30,
+                         do_sample=False)  # Ajustez les paramètres selon vos besoins
+    return summary[0]['summary_text']
