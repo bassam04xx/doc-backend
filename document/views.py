@@ -136,3 +136,45 @@ class DocumentViewSet(viewsets.ModelViewSet):
         print(f"Document '{file_name}' integrated successfully.")
         serializer = self.serializer_class(document)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def get_documents_by_user_id(self, request):
+        token = request.headers.get('Authorization')
+        token = token[len("Bearer "):]
+        user_id = get_user_id(token)
+        print("user id", user_id)
+        if user_id is None:
+            return Response({'message': 'Invalid user ID.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        documents = Document.objects.filter(owner_id=user_id)
+        print("documents", documents)
+        if not documents.exists():
+            return Response({'message': 'No documents found for this user'}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = self.serializer_class(
+            documents,
+            many=True,
+            context={'request': request}
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def get_documents_by_manager_id(self, request):
+        token = request.headers.get('Authorization')
+        print ("token", token)
+        token = token[len("Bearer "):]
+        user_id = get_user_id(token)
+        if user_id is None:
+            return Response({'message': 'Invalid user ID.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        documents = Document.objects.filter(manager=user_id)
+        if not documents.exists():
+            return Response({'message': 'No documents found for this manager'}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = self.serializer_class(
+            documents,
+            many=True,
+            context={'request': request}
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
+           
