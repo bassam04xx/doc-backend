@@ -4,7 +4,8 @@ from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from project.permissions import IsAuthenticated, IsAdmin, IsManager, IsEmployee
+from project.rest_permissions import IsAuthenticated, IsAdmin, IsManager, IsEmployee
+from user.services.user_services import get_user_id
 from .models import Document
 from .serializers import DocumentSerializer
 from .utils import (
@@ -64,7 +65,11 @@ class DocumentViewSet(viewsets.ModelViewSet):
         print(f"Summary: {summary}")
 
         # Collect metadata from the request
-        owner_id = request.data.get('owner_id', 1)  # Default owner to admin (ID: 1)
+        token = request.headers.get('Authorization')
+        token = token[len("Bearer "):]
+        print(f"Token: {token}")
+        owner_id = get_user_id(token)
+
         manager_id = request.data.get('manager_id', 1)  # Default manager to admin (ID: 1)
 
         # Create a Document object and save it to the database
@@ -80,7 +85,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
         serializer = self.serializer_class(document)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated, IsEmployee | IsAdmin | IsManager])
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def get_document(self, request):
         """
         Fetches a document by its file name and returns it as a download.
@@ -101,7 +106,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
         response = FileResponse(file_io, as_attachment=True, filename=file_name)
         return response
 
-    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated, IsAdmin | IsEmployee | IsManager])
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def integrateOldDocument(self, request):
         """
         Integrates an existing document into the system by creating a new Document record.

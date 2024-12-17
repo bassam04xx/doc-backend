@@ -14,6 +14,10 @@ from spyne.model.enum import Enum
 #     FINANCE = "finance"
 #     REPORTING = "reporting"
 
+class MySoapHeaders(ComplexModel):
+    __namespace__ = "project.user.headers"
+    authorization = Unicode  # Token or other authorization information
+
 
 class User(ComplexModel):
     id = Integer(required=False)

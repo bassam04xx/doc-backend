@@ -1,8 +1,5 @@
 from rest_framework.permissions import BasePermission
 from user.services.user_services import get_user_role
-
-from rest_framework.permissions import BasePermission
-from user.services.user_services import get_user_role
 from user.utils import validate_jwt
 
 

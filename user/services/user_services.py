@@ -11,6 +11,7 @@ def login_user(username, password):
     if not user:
         raise Exception("Invalid credentials")
     payload = {
+        "id": user.id,
         "username": user.username,
         "email": user.email,
         "role": user.role,
@@ -147,6 +148,29 @@ def get_user_role(token: str) -> str:
         return role
     except Exception as e:
         raise Exception(f"Error extracting user role: {e}")
+
+
+def get_user_id(token: str) -> int:
+    """
+    Extract the user ID from the JWT token.
+
+    Args:
+        token (str): The JWT token.
+
+    Returns:
+        int: The user's ID.
+
+    Raises:
+        Exception: If the token is invalid or the user ID is not found.
+    """
+    try:
+        payload = validate_jwt(token)
+        user_id = payload.get("id")
+        if not user_id:
+            raise Exception("User ID not found in the token.")
+        return user_id
+    except Exception as e:
+        raise Exception(f"Error extracting user ID: {e}")
 
 
 def toggle_account_status(user_id: int) -> User:
