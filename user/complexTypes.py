@@ -27,7 +27,7 @@ class User(ComplexModel):
     role = Unicode
     first_name = Unicode
     last_name = Unicode
-    manager_type = Unicode
+    manager_type = Unicode(required=False)
     is_active = Boolean(required=False)
     is_superuser = Boolean(required=False)
     is_staff = Boolean(required=False)
