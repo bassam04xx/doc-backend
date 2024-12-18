@@ -8,7 +8,7 @@ from datetime import timedelta, datetime
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from project.rest_permissions import IsAuthenticated, IsAdmin, IsManager, IsEmployee
-from user.services.user_services import get_user_id
+from user.services.user_services import get_user_id, get_user_by_id
 from .models import Document
 from .serializers import DocumentSerializer
 from .utils import (
@@ -334,3 +334,36 @@ class DocumentViewSet(viewsets.ModelViewSet):
         ]
 
         return Response(activities, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated, IsAdmin])
+    def get_top_managers(self, request):
+        """
+        Fetches the top managers based on the number of documents they manage.
+        Returns manager's full name and the count of documents assigned to them.
+        """
+        # Aggregating document count for each manager
+        managers = (
+            Document.objects.values('manager_id')
+            .annotate(document_count=Count('id'))
+            .order_by('-document_count')[:5]  # Fetch top 10 managers
+        )
+
+        # Fetch the manager details
+        top_managers = []
+        for manager_data in managers:
+            manager_id = manager_data['manager_id']
+            document_count = manager_data['document_count']
+
+            try:
+                manager = get_user_by_id(manager_id)  # Use utility function to fetch manager details
+                if manager:
+                    top_managers.append({
+                        "manager_id": manager.id,
+                        "full_name": manager.get_full_name(),
+                        "document_count": document_count
+                    })
+            except ValueError:
+                # If the manager does not exist, skip adding to the result
+                continue
+
+        return Response(top_managers, status=status.HTTP_200_OK)
