@@ -8,7 +8,7 @@ from datetime import timedelta, datetime
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from project.rest_permissions import IsAuthenticated, IsAdmin, IsManager, IsEmployee
-from user.services.user_services import get_user_id, get_user_by_id
+from user.services.user_services import get_user_id, get_user_by_id, get_user_role
 from .models import Document
 from .serializers import DocumentSerializer
 from .utils import (
@@ -212,8 +212,9 @@ class DocumentViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def get_documents_by_manager_id(self, request):
         token = request.headers.get('Authorization')
-        print("token", token)
+
         token = token[len("Bearer "):]
+
         user_id = get_user_id(token)
         if user_id is None:
             return Response({'message': 'Invalid user ID.'}, status=status.HTTP_400_BAD_REQUEST)
