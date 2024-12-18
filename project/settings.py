@@ -61,14 +61,18 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'workflow',
+    'graphene_django',
+
     
 ]
+GRAPHENE = {
+    'SCHEMA': 'document.schema.schema',
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',

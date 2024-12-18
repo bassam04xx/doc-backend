@@ -8,6 +8,7 @@ from requests import HTTPError
 import io
 import PyPDF2
 from transformers import pipeline
+from .models import Document
 
 SCOPES = ['https://www.googleapis.com/auth/drive']
 SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(__file__), 'service-account.json')
@@ -75,8 +76,70 @@ def summarize_document(document_text: str):
         summary_text = None
 
     return summary_text
+def transform_text_to_pgsql_command(text):
+    # Get table schema dynamically from the Document model
+    schema = []
+    for field in Document._meta.fields:
+        column_name = field.name
+        column_type = type(field).__name__
+        schema.append(f"{column_name} ({column_type})")
+    table_schema = ", ".join(schema)
+
+    # Configure the genai API
+    genai.configure(api_key=config("GEMINI_API_KEY"))
+    model = genai.GenerativeModel('gemini-1.5-flash')
+
+    # Prompt construction
+    prompt = (
+    f"You are a PostgreSQL expert. Given an input table schema and a question, "
+    f"generate a valid PostgreSQL query to answer the question. "
+    f"The question is: {text} and the table schema is as follows:\n"
+    
+    f"Table 'documents':\n"
+    f"  - id (PK, INT)\n"
+    f"  - owner_id (FK to users.id, INT)\n"
+    f"  - category (VARCHAR, can be 'invoice', 'day-off', 'report')\n"
+    f"  - manager_id (FK to users.id, INT)\n"
+    f"  - summary (TEXT)\n"
+    f"  - file_name (VARCHAR)\n"
+    f"  - created_at (DATETIME)\n"
+    f"  - status (VARCHAR)\n"
+    
+    f"Table 'users':\n"
+    f"  - id (PK, INT)\n"
+    f"  - username (VARCHAR)\n"
+    f"  - email (VARCHAR, UNIQUE)\n"
+    f"  - role (VARCHAR, choices: 'admin', 'manager', 'employee')\n"
+    f"  - manager_type (TEXT, optional, for 'manager' role)\n"
+    
+    f"Table 'workflow':\n"
+    f"  - id (PK, INT)\n"
+    f"  - document_id (FK to documents.id, INT)\n"
+    f"  - former_status (VARCHAR)\n"
+    f"  - new_status (VARCHAR)\n"
+    f"  - updated_at (DATETIME)\n"
+    f"  - updated_by_id (FK to users.id, INT)\n"
+    
+    f"Relations:\n"
+    f"  - 'documents.owner_id' references 'users.id'\n"
+    f"  - 'documents.manager_id' references 'users.id'\n"
+    f"  - 'workflow.document_id' references 'documents.id'\n"
+    f"  - 'workflow.updated_by_id' references 'users.id'\n"
+    
+    f"IMPORTANT: ONLY GIVE THE PGSQL COMMAND, DO NOT SAY ANYTHING ELSE."
+)
 
 
+
+    # Generate the PostgreSQL command
+    try:
+        pgsql_command = model.generate_content(prompt).candidates[0].content.parts[0].text
+        return pgsql_command
+    except Exception as e:
+        return f"Error generating PostgreSQL command: {e}"
+
+
+   
 def get_file_by_name(filename):
     service = authenticate()
     try:

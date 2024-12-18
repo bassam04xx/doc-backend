@@ -11,7 +11,16 @@ class Document(models.Model):
     status = models.CharField(max_length=50)
 
     def __str__(self) -> str:
-        return self.file_name
+        # Dynamically list all fields and their values
+        field_values = []
+        for field in self._meta.get_fields():
+            if field.concrete:  # Skip related fields like reverse relationships
+                field_name = field.name
+                field_value = getattr(self, field_name, None)
+                field_values.append(f"{field_name}: {field_value}")
+        return ", ".join(field_values)
+
+        
 
     class Meta:
         db_table = 'documents'  # Replace with your preferred table name

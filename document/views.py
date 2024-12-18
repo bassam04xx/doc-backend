@@ -20,6 +20,10 @@ from .utils import (
     get_file_by_name, classify_custom_document, summarize_text
 )
 import tempfile
+from graphql.execution import execute
+from graphene_django.views import GraphQLView
+from .schema import schema  # Assuming this schema is saved in 'graphql/schema.py'
+from django.views.decorators.csrf import csrf_exempt
 
 
 # Render form templates
@@ -368,3 +372,20 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 continue
 
         return Response(top_managers, status=status.HTTP_200_OK)
+
+class GraphqlView(GraphQLView):
+    schema = schema
+    @csrf_exempt
+    def dispatch(self, request, *args, **kwargs):
+        if request.method == "POST":
+            # Here, you will handle the authentication token check
+            token = request.headers.get('Authorization')
+            if token:
+                token = token[len("Bearer "):]
+                # Verify the token and assign the user to the context if valid
+                user_id = get_user_id(token)  # Assuming a helper function
+                if user_id:
+                    request.user.id = user_id  # Add user ID to request context
+            else:
+                return JsonResponse({'error': 'Authentication required'}, status=401)
+        return super().dispatch(request, *args, **kwargs)
