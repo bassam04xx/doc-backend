@@ -1,7 +1,10 @@
+from django.db.models import Count
 from django.http import FileResponse
 from django.shortcuts import render
 from rest_framework import status, viewsets
 from rest_framework.response import Response
+from django.utils import timezone
+from datetime import timedelta, datetime
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from project.rest_permissions import IsAuthenticated, IsAdmin, IsManager, IsEmployee
@@ -112,8 +115,6 @@ class DocumentViewSet(viewsets.ModelViewSet):
         upload(temp_file_path, file_name)
         print('File uploaded successfully.')
 
-
-
         # Collect metadata from the request
         token = request.headers.get('Authorization')
         token = token[len("Bearer "):]
@@ -186,7 +187,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
         print(f"Document '{file_name}' integrated successfully.")
         serializer = self.serializer_class(document)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
+
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def get_documents_by_user_id(self, request):
         token = request.headers.get('Authorization')
@@ -195,12 +196,12 @@ class DocumentViewSet(viewsets.ModelViewSet):
         print("user id", user_id)
         if user_id is None:
             return Response({'message': 'Invalid user ID.'}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         documents = Document.objects.filter(owner_id=user_id)
         print("documents", documents)
         if not documents.exists():
             return Response({'message': 'No documents found for this user'}, status=status.HTTP_404_NOT_FOUND)
-        
+
         serializer = self.serializer_class(
             documents,
             many=True,
@@ -211,20 +212,125 @@ class DocumentViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def get_documents_by_manager_id(self, request):
         token = request.headers.get('Authorization')
-        print ("token", token)
+        print("token", token)
         token = token[len("Bearer "):]
         user_id = get_user_id(token)
         if user_id is None:
             return Response({'message': 'Invalid user ID.'}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         documents = Document.objects.filter(manager=user_id)
         if not documents.exists():
             return Response({'message': 'No documents found for this manager'}, status=status.HTTP_404_NOT_FOUND)
-        
+
         serializer = self.serializer_class(
             documents,
             many=True,
             context={'request': request}
         )
         return Response(serializer.data, status=status.HTTP_200_OK)
-           
+
+    def get_total_documents_data(self):
+        """
+        Calculates total documents for the current and last month, and percentage change.
+        """
+        current_time = timezone.now()
+        first_day_this_month = current_time.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        last_month_start = (first_day_this_month - timedelta(days=1)).replace(day=1)
+
+        total_this_month = Document.objects.filter(created_at__gte=first_day_this_month).count()
+        total_last_month = Document.objects.filter(
+            created_at__gte=last_month_start,
+            created_at__lt=first_day_this_month
+        ).count()
+
+        total_change = (
+            0 if total_last_month == 0 else
+            ((total_this_month - total_last_month) / total_last_month) * 100
+        )
+
+        return {
+            "total": total_this_month,
+            "change": round(total_change, 2)
+        }
+
+    def get_pending_documents_data(self):
+        """
+        Calculates pending documents for today and yesterday, and percentage change.
+        """
+        current_time = timezone.now()
+        start_of_today = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
+        start_of_yesterday = start_of_today - timedelta(days=1)
+
+        pending_today = Document.objects.filter(
+            created_at__gte=start_of_today, status="pending"
+        ).count()
+        pending_yesterday = Document.objects.filter(
+            created_at__gte=start_of_yesterday,
+            created_at__lt=start_of_today,
+            status="pending"
+        ).count()
+
+        pending_change = (
+            0 if pending_yesterday == 0 else
+            ((pending_today - pending_yesterday) / pending_yesterday) * 100
+        )
+
+        return {
+            "total": pending_today,
+            "change": round(pending_change, 2)
+        }
+
+    def get_status_distribution_data(self):
+        """
+        Fetches the distribution of documents by their status.
+        """
+        status_distribution = Document.objects.values('status').annotate(count=Count('status'))
+        return [
+            {"name": entry["status"], "value": entry["count"]} for entry in status_distribution
+        ]
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated, IsAdmin])
+    def get_dashboard_data(self, request):
+        """
+        Fetches combined data for the admin dashboard in one request.
+        """
+        try:
+            total_documents = self.get_total_documents_data()
+            pending_documents = self.get_pending_documents_data()
+            status_distribution = self.get_status_distribution_data()
+
+            dashboard_data = {
+                "total_documents": total_documents,
+                "pending_documents": pending_documents,
+                "status_distribution": status_distribution,
+            }
+
+            return Response(dashboard_data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated, IsAdmin])
+    def recent_activity(self, request):
+        """
+        Fetch recent document activities, including the owner's details, action, document name, and timestamp.
+        """
+        # Fetch the most recent 10 documents (or you can adjust the limit)
+        recent_documents = Document.objects.select_related('owner').order_by('-created_at')[:5]
+
+        # Prepare the response data
+        activities = [
+            {
+                "user": {
+                    "name": doc.owner.get_full_name(),
+                    "avatar":  None,
+                    "initials": f"{doc.owner.first_name[0]}{doc.owner.last_name[0]}" if doc.owner.first_name else "",
+                },
+                "action": "uploaded",
+                "document_name": doc.file_name,
+                "time": doc.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            }
+            for doc in recent_documents
+        ]
+
+        return Response(activities, status=status.HTTP_200_OK)

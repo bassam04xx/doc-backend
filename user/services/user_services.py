@@ -1,4 +1,7 @@
+from datetime import timedelta
+
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils import timezone
 
 from user.utils import generate_jwt, validate_jwt
 from django.contrib.auth import authenticate, get_user_model
@@ -195,6 +198,36 @@ def get_user_status(user_id: int) -> bool:
         raise e
 
 
+def get_active_users_stats():
+    """
+    Fetch statistics for active users.
+    Returns:
+        dict: A dictionary containing the total active users and percentage change.
+    """
+    try:
+        # Fetch current total active users
+        total_active_users = User.objects.filter(is_active=True).count()
+
+        # Fetch active users from last week (assuming you store timestamps)
+        last_week_active_users = User.objects.filter(
+            is_active=True, date_joined__gte=timezone.now() - timedelta(days=7)
+        ).count()
+
+        # Calculate percentage change
+        change = (
+            ((total_active_users - last_week_active_users) / last_week_active_users * 100)
+            if last_week_active_users > 0 else 0
+        )
+
+        return {
+            "total": total_active_users,
+            "change": round(change, 2),
+        }
+
+    except Exception as e:
+        raise Exception(f"Error calculating active users: {e}")
+
+
 def get_user_username(user_id: int) -> str:
     try:
         user = User.objects.get(id=user_id)
@@ -203,3 +236,18 @@ def get_user_username(user_id: int) -> str:
         raise ValueError(f"User with ID {user_id} does not exist.")
     except Exception as e:
         raise e
+
+
+def get_user_role_distribution():
+    """
+    Calculate the distribution of users by role.
+
+    Returns:
+        dict: A dictionary with roles as keys and user counts as values.
+    """
+    try:
+        roles = ["admin", "manager", "employee"]
+        distribution = {role: User.objects.filter(role=role).count() for role in roles}
+        return distribution
+    except Exception as e:
+        raise Exception(f"Error calculating role distribution: {e}")

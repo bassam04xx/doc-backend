@@ -8,7 +8,7 @@ from django.db import IntegrityError
 from user.complexTypes import User as ComplexUser, MySoapHeaders
 from user.services.user_services import create_user, get_all_users, get_users_by_role, patch_user, get_user_by_id, \
     update_user, delete_user, login_user, get_user_by_username, get_user_role, toggle_account_status, get_user_status, \
-    get_user_username
+    get_user_username, get_active_users_stats, get_user_role_distribution
 from spyne.model.primitive import AnyDict
 from user.validators import validate_user
 from user.utils import complex_user_to_model_user, model_user_to_complex_user
@@ -147,6 +147,35 @@ class UserSOAPService(ServiceBase):
             return f"User {username} is now {status}."
         except User.DoesNotExist:
             raise Fault(faultcode="Client", faultstring=f"User with ID {userId} does not exist.")
+        except Exception as e:
+            raise Fault(faultcode="Server", faultstring=str(e))
+
+    @rpc(MySoapHeaders, _returns=AnyDict)
+    def get_active_users_stats(self, headers: MySoapHeaders):
+        check_authorization(headers, required_roles=["admin"])
+        try:
+            stats = get_active_users_stats()
+            return stats
+        except Exception as e:
+            raise Fault(faultcode="Server", faultstring=str(e))
+
+    @rpc(MySoapHeaders, _returns=AnyDict)
+    def fetch_user_role_distribution(self, headers: MySoapHeaders):
+        """
+        Fetch the distribution of users across roles.
+
+        Args:
+            headers (MySoapHeaders): The SOAP headers containing the authorization token.
+
+        Returns:
+            dict: A dictionary with roles and their respective user counts.
+        """
+        # Optional: Check authorization
+        check_authorization(headers, required_roles=["admin", "manager"])  # Only admins or managers can access
+
+        try:
+            distribution = get_user_role_distribution()
+            return distribution
         except Exception as e:
             raise Fault(faultcode="Server", faultstring=str(e))
 
