@@ -61,6 +61,8 @@ def summarize_document(document_text: str):
     genai.configure(api_key=config('GEMINI_API_KEY'))
     model = genai.GenerativeModel('gemini-1.5-flash')
 
+    print("document text", document_text)
+
 
     # Create a prompt for the model
     prompt = (
@@ -160,6 +162,43 @@ def get_file_by_name(filename):
         return files[0]['id']
 
     except HTTPError as error:
+        print(f"An error occurred: {error}")
+        return None
+
+
+def get_old_file_by_name(filename):
+    service = authenticate()  # Assuming authenticate() sets up the Google API client
+    try:
+        # Use the files().list() method to search for files by name
+        results = service.files().list(
+            q=f"name = '{filename}' and trashed = false",
+            spaces='drive',
+            fields="files(id, name)"
+        ).execute()
+
+        files = results.get('files', [])
+
+        if not files:
+            print("No files found.")
+            return None
+
+        # Fetch the file content using its ID
+        file_id = files[0]['id']
+
+        # Get the media content of the file (this returns a MediaIoBaseDownload object)
+        request = service.files().get_media(fileId=file_id)
+        file_io = io.BytesIO()  # Create an in-memory byte stream
+        downloader = MediaIoBaseDownload(file_io, request)
+
+        done = False
+        while not done:
+            status, done = downloader.next_chunk()
+
+        # Return the binary data
+        file_io.seek(0)  # Reset stream position to the beginning
+        return file_io
+
+    except HttpError as error:
         print(f"An error occurred: {error}")
         return None
 

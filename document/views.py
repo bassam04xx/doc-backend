@@ -1,5 +1,5 @@
 from django.db.models import Count
-from django.http import FileResponse
+from django.http import FileResponse, JsonResponse
 from django.shortcuts import render
 from rest_framework import status, viewsets
 from rest_framework.response import Response
@@ -17,7 +17,7 @@ from .utils import (
     extract_text_from_pdf,
     upload,
     summarize_document,
-    get_file_by_name, classify_custom_document, summarize_text
+    get_file_by_name, classify_custom_document, summarize_text, get_old_file_by_name
 )
 import tempfile
 from graphql.execution import execute
@@ -68,7 +68,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
         print('File uploaded successfully.')
 
         print('Generating summary...')
-        summary = summarize_document(file_name)
+        summary = summarize_document(extract_text_from_pdf(temp_file_path))
         print(f"Summary: {summary}")
 
         # Collect metadata from the request
@@ -161,16 +161,33 @@ class DocumentViewSet(viewsets.ModelViewSet):
         response = FileResponse(file_io, as_attachment=True, filename=file_name)
         return response
 
-    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(detail=False, methods=['post'])
     def integrateOldDocument(self, request):
         """
         Integrates an existing document into the system by creating a new Document record.
+        Fetches the document from Google Drive by its file ID.
         Allowed for Admin and Manager only.
         """
         print("Integrating old document...")
+
+        # Get the Google Drive file ID and file name from the request
         file_name = request.data.get('file_name')
+
         if not file_name:
             return Response({'error': 'File name is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Download the file from Google Drive
+        # Save the file temporarily
+        file_io = get_old_file_by_name(file_name)
+
+        if not file_io:
+            return Response({'error': 'Failed to download file from Google Drive.'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Save the downloaded file to a temporary file
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            temp_file.write(file_io.read())  # Write the content (binary data) to the temp file
+            temp_file_path = temp_file.name
 
         # Metadata for the document
         owner_id = request.data.get('owner_id', 1)  # Default owner to admin
@@ -178,12 +195,15 @@ class DocumentViewSet(viewsets.ModelViewSet):
         manager_id = request.data.get('manager_id', 1)  # Default manager to admin
         status_field = request.data.get('status', 'pending')  # Default status
 
+        # Extract summary and classify the document
+        summary = summarize_document(extract_text_from_pdf(temp_file_path))
+
         # Create and save the Document object
         document = Document.objects.create(
             owner_id=owner_id,
             category=category,
             manager_id=manager_id,
-            summary="Summary not available for old documents.",
+            summary=summary,
             file_name=file_name,
             status=status_field
         )
