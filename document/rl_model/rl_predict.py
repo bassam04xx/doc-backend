@@ -9,7 +9,7 @@ from stable_baselines3 import PPO
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 # Set the DJANGO_SETTINGS_MODULE environment variable
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")  # Replace 'doc_backend.settings' with your actual settings module
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")  # Replace 'project.settings' with your actual settings module
 
 # Configure Django
 django.setup()
@@ -19,19 +19,28 @@ User = get_user_model()
 Manager = User.objects.filter(role="manager")
 
 # Load the pre-trained model
-model = PPO.load("rl_model/saved_model.zip")
+model = PPO.load("rl_model/saved_model_v2.zip")
+
+# Categories map
+categories_map = {
+    "day-off": 0,
+    "report": 1,
+    "invoice": 2,
+    "contract": 3,
+    "audit report": 4,
+    "financial statement": 5,
+    "expense report": 6,
+    "risk assessment": 7,
+    "training material": 8,
+    "compliance report": 9
+}
 
 # Function to predict the manager based on the document category
 def predict_manager(category):
-    if category == "day-off":
-        state = 0
-    elif category == "report":
-        state = 1
-    elif category == "invoice":
-        state = 2
-    else:
+    if category not in categories_map:
         raise ValueError(f"Unknown category: {category}")
 
+    state = categories_map[category]
     action, _states = model.predict(np.array([state]))
 
     if action == 0:
@@ -47,6 +56,6 @@ def predict_manager(category):
 
 # Example usage
 if __name__ == "__main__":
-    category = "invoice"
+    category = "expense report"  # Example category
     manager = predict_manager(category)
-    print(f"Selected manager: {manager.username}")
+    print(f"Selected manager: {manager.username if manager else 'No manager found'}")

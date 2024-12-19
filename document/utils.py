@@ -1,6 +1,8 @@
 from decouple import config
+from django.contrib.auth import get_user_model
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
+from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 import os
 import google.generativeai as genai
@@ -9,6 +11,8 @@ import io
 import PyPDF2
 from transformers import pipeline
 from .models import Document
+from stable_baselines3 import PPO  # Exemple de modèle RL
+import numpy as np
 
 SCOPES = ['https://www.googleapis.com/auth/drive']
 SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(__file__), 'service-account.json')
@@ -286,3 +290,37 @@ def summarize_text(text):
     summary = summarizer(text, max_length=130, min_length=30,
                          do_sample=False)  # Ajustez les paramètres selon vos besoins
     return summary[0]['summary_text']
+
+
+model = PPO.load("document/rl_model/rl_model/saved_model_v2.zip")
+
+
+def predict_manager(category):
+    User = get_user_model()
+    Manager = User.objects.filter(role="manager")
+    # Convertir la catégorie en valeur d'état (0 pour "day-off", 1 pour "contract", 2 pour "invoice")
+    if category == "day-off":
+        state = 0
+    elif category == "report":
+        state = 1
+    elif category == "invoice":
+        state = 2
+    else:
+        raise ValueError(f"Catégorie inconnue: {category}")
+
+    # Utiliser le modèle pour prédire l'action (le manager à choisir)
+    action, _states = model.predict(np.array([state]))  # Nous passons l'état à l'algorithme RL
+
+    # Retourner le manager en fonction de l'action choisie
+    if action == 0:
+        manager = Manager.objects.filter(manager_type="hr").first()  # Si l'action est 0, choisir un manager RH pour "day-off"
+    elif action == 1:
+        manager = Manager.objects.filter(
+            manager_type="reporting").first()  # Si l'action est 1, choisir un manager Comptabilité pour "contract"
+    elif action == 2:
+        manager = Manager.objects.filter(
+            manager_type="finance").first()  # Si l'action est 2, choisir un manager Finance pour "invoice"
+    else:
+        raise ValueError(f"Action inconnue: {action}")
+
+    return manager

@@ -17,7 +17,7 @@ from .utils import (
     extract_text_from_pdf,
     upload,
     summarize_document,
-    get_file_by_name, classify_custom_document, summarize_text, get_old_file_by_name
+    get_file_by_name, classify_custom_document, summarize_text, get_old_file_by_name, predict_manager
 )
 import tempfile
 from graphql.execution import execute
@@ -77,7 +77,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
         print(f"Token: {token}")
         owner_id = get_user_id(token)
 
-        manager_id = request.data.get('manager_id', 1)  # Default manager to admin (ID: 1)
+        manager_id = predict_manager(category)
 
         # Create a Document object and save it to the database
         document = Document.objects.create(
@@ -125,7 +125,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
         print(f"Token: {token}")
         owner_id = get_user_id(token)
 
-        manager_id = request.data.get('manager_id', 1)  # Default manager to admin (ID: 1)
+        manager_id = predict_manager(category)
 
         # Create a Document object and save it to the database
         document = Document.objects.create(
