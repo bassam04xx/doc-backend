@@ -15,10 +15,27 @@ class ManagerEnv(gym.Env):
 
         # Catégories disponibles
         self.categories = [
-            "day-off", "report", "invoice", "contract", "audit report",
-            "financial statement", "expense report", "risk assessment",
-            "training material", "compliance report"
-        ]
+            "day-off", "report", "invoice",  "Documentation", "Design", "Proposal", "Memo", "Agreement", "Receipt", "Letter",
+        "Manual", "Presentation", "Email", "Resume", "Minutes", "Checklist", "Policy", "Procedure",
+        "Research Paper", "Whitepaper", "Guideline", "Testimonial", "Certificate", "Order",
+        "SOW (Statement of Work)", "Project Plan", "Budget", "Financial Statement", "Contract Amendment",
+        "Project Update", "Job Description", "Non-disclosure Agreement (NDA)", "Tender", "Legal Notice",
+        "Patent", "Press Release", "Event Flyer", "Newsletter", "Statement", "Application Form", "Transcript",
+        "Report Summary", "Project Charter", "Presentation Slides", "Terms and Conditions", "Agreement Addendum",
+        "Purchase Order", "Order Confirmation", "Business Letter", "Letter of Intent", "Internal Memo",
+        "Customer Feedback", "Work Order", "Audit Report", "Risk Assessment", "Compliance Report", "Tax Report",
+        "Logistics Report", "Contract Proposal", "Employee Handbook", "Employee Onboarding", "Training Materials",
+        "Sales Proposal", "Marketing Plan", "Client Brief", "Service Level Agreement (SLA)", "Product Specification",
+        "Performance Review", "Meeting Agenda", "Product Roadmap", "Change Request", "Job Application",
+        "Exit Interview", "Workplace Safety Plan", "Employee Evaluation", "Supplier Agreement", "Project Budget",
+        "Supplier Invoice", "Asset Management", "Health & Safety Report", "Vendor Contract", "Technical Documentation",
+        "Patent Application", "Purchase Requisition", "Event Proposal", "Business Continuity Plan", "Strategic Plan",
+        "Legal Brief", "Customer Agreement", "Travel Request", "Expense Report", "Software Release Notes",
+        "Audit Trail", "Project Milestones", "Service Report", "IT Incident Report", "Support Ticket",
+        "Client Feedback", "Team Meeting Notes", "Employee Benefits Guide", "Operational Plan",
+        "Board Meeting Minutes", "Company Newsletter", "Product Review", "Service Agreement", "Customer Service Log",
+        "Communication Plan", "Leadership Brief", "Marketing Report", "Team Performance Report",
+        "Crisis Management Plan"]
 
         # Définir l'espace d'observation en fonction du nombre de catégories
         self.observation_space = spaces.Discrete(len(self.categories))

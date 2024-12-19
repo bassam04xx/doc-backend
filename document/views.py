@@ -1,3 +1,5 @@
+import genai
+from decouple import config
 from django.db.models import Count
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import render
@@ -17,7 +19,8 @@ from .utils import (
     extract_text_from_pdf,
     upload,
     summarize_document,
-    get_file_by_name, classify_custom_document, summarize_text, get_old_file_by_name, predict_manager
+    get_file_by_name, classify_custom_document, summarize_text, get_old_file_by_name, predict_manager,
+    get_manager_by_gemini
 )
 import tempfile
 from graphql.execution import execute
@@ -77,7 +80,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
         print(f"Token: {token}")
         owner_id = get_user_id(token)
 
-        manager_id = predict_manager(category)
+        manager_id = predict_manager(category).id
 
         # Create a Document object and save it to the database
         document = Document.objects.create(
@@ -124,8 +127,13 @@ class DocumentViewSet(viewsets.ModelViewSet):
         token = token[len("Bearer "):]
         print(f"Token: {token}")
         owner_id = get_user_id(token)
+        try:
+            manager_id = predict_manager(category).id
+        except ValueError as e:
+            # Generate a summary for the document
+            manager_id = get_manager_by_gemini(category)
 
-        manager_id = predict_manager(category)
+
 
         # Create a Document object and save it to the database
         document = Document.objects.create(
@@ -272,6 +280,9 @@ class DocumentViewSet(viewsets.ModelViewSet):
             "change": round(total_change, 2)
         }
 
+
+
+
     def get_pending_documents_data(self):
         """
         Calculates pending documents for today and yesterday, and percentage change.
@@ -403,3 +414,4 @@ class GraphqlView(GraphQLView):
             else:
                 return JsonResponse({'error': 'Authentication required'}, status=401)
         return super().dispatch(request, *args, **kwargs)
+
