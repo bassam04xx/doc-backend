@@ -251,3 +251,17 @@ def get_user_role_distribution():
         return distribution
     except Exception as e:
         raise Exception(f"Error calculating role distribution: {e}")
+
+
+def get_all_managers():
+    """
+    Fetch all managers.
+
+    Returns:
+        list: A list of managers.
+    """
+    try:
+        managers = User.objects.filter(role="manager")
+        return managers
+    except Exception as e:
+        raise Exception(f"Error fetching all managers: {e}")

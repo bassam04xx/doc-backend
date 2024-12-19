@@ -62,8 +62,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'workflow',
     'graphene_django',
+    'django_extensions',
 
-    
 ]
 GRAPHENE = {
     'SCHEMA': 'document.schema.schema',
@@ -115,6 +115,10 @@ TEMPLATES = [
         },
     },
 ]
+
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
+
 
 WSGI_APPLICATION = 'project.wsgi.application'
 
