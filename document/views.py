@@ -139,28 +139,22 @@ class DocumentViewSet(viewsets.ModelViewSet):
 
         serializer = self.serializer_class(document)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(detail=False, methods=['post'])  
     def get_document(self, request):
-        """
-        Fetches a document by its file name and returns it as a download.
-        Allowed for Admin and Manager.
-        """
         file_name = request.data.get('file_name')
-        if not file_name:
-            return Response({'error': 'File name is required.'}, status=status.HTTP_400_BAD_REQUEST)
-
         file_id = get_file_by_name(file_name)
+
         if not file_id:
             return Response({'error': 'File not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        print(f"Downloading file: {file_name}")
+        # Download the file from Google Drive
         file_io = download_file_from_drive(file_id)
 
-        # Return the file as a downloadable response
+        # Return the file as a download
+
         response = FileResponse(file_io, as_attachment=True, filename=file_name)
         return response
-
+        
     @action(detail=False, methods=['post'])
     def integrateOldDocument(self, request):
         """

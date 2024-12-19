@@ -140,32 +140,6 @@ def transform_text_to_pgsql_command(text):
     except Exception as e:
         return f"Error generating PostgreSQL command: {e}"
 
-
-   
-def get_file_by_name(filename):
-    service = authenticate()
-    try:
-        # Use the files().list() method to search for files by name
-        results = service.files().list(
-            q=f"name = '{filename}' and trashed = false",
-            spaces='drive',
-            fields="files(id, name)",
-        ).execute()
-
-        files = results.get('files', [])
-
-        if not files:
-            print("No files found.")
-            return None
-
-        # Return only the file ID
-        return files[0]['id']
-
-    except HTTPError as error:
-        print(f"An error occurred: {error}")
-        return None
-
-
 def get_old_file_by_name(filename):
     service = authenticate()  # Assuming authenticate() sets up the Google API client
     try:
@@ -201,22 +175,42 @@ def get_old_file_by_name(filename):
     except HttpError as error:
         print(f"An error occurred: {error}")
         return None
+def get_file_by_name(filename):
+    service = authenticate()
+    try:
+        # Use the files().list() method to search for files by name
+        results = service.files().list(
+            q=f"name = '{filename}' and trashed = false",
+            spaces='drive',
+            fields="files(id, name)",
+        ).execute()
+        
+        files = results.get('files', [])
 
+        if not files:
+            print("No files found.")
+            return None
+        
+        # Return only the file ID
+        return files[0]['id']
+
+    except HTTPError as error:
+        print(f"An error occurred: {error}")
+        return None
 
 def download_file_from_drive(file_id):
     service = authenticate()
     request = service.files().get_media(fileId=file_id)
     file_io = io.BytesIO()
     downloader = MediaIoBaseDownload(file_io, request)
-
+    
     done = False
     while not done:
         status, done = downloader.next_chunk()
         print(f"Download progress: {int(status.progress() * 100)}%")
-
+    
     file_io.seek(0)
     return file_io
-
 
 def extract_text_from_pdf(pdf_file):
     pdf_reader = PyPDF2.PdfReader(pdf_file)
